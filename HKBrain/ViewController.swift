@@ -132,19 +132,19 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     func refreshAccessory(_ accessory: HMAccessory) {
         for service in accessory.services {
             // only subscribe to lights and TV power state
-            if service.serviceType == HMServiceTypeLightbulb || service.associatedServiceType == HMServiceTypeLightbulb || service.name == "TV" {
+            if service.serviceType == HMServiceTypeLightbulb || service.associatedServiceType == HMServiceTypeLightbulb {
                 for c in service.characteristics {
                     if c.characteristicType == HMCharacteristicTypePowerState {
                         c.enableNotification(true, completionHandler: { (error) in
                             if error != nil {
                                 print("ENABLING NOTIFICATION FOR \(service.name) FAILED ##############")
                                 print(error?.localizedDescription ?? "unknown")
-                                self.mqtt.publish("smarter/homekit/errors/\(self.clientID)", withString: "\(c.uniqueIdentifier.uuidString),\(error?.localizedDescription ?? "unknown"),\(NSDate().timeIntervalSince1970)")
+                                self.mqtt.publish("smarter/homekit/errors/\(self.clientID)", withString: "\(self.sanitizeName(service.name)),\(error?.localizedDescription ?? "unknown"),\(NSDate().timeIntervalSince1970)")
                             } else {
-                                print("enabled notifications for \(service.name) of type \(c.localizedDescription)")
+                                print("enabled notifications for \(self.sanitizeName(service.name)) of type \(c.localizedDescription)")
                             }
                         })
-                        knownCharacteristics[c.uniqueIdentifier.uuidString] = c
+                        knownCharacteristics[sanitizeName(service.name)] = c
                         publish(c, accessory: accessory, service: service)
                     }
                 }
@@ -161,6 +161,10 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         return "sensor"
     }
     
+    func sanitizeName(_ name: String) -> String {
+        return name.replacingOccurrences(of: ",", with: "")
+    }
+    
     func accessory(_ accessory: HMAccessory, service: HMService, didUpdateValueFor characteristic: HMCharacteristic) {
         publish(characteristic, accessory: accessory, service: service)
     }
@@ -168,8 +172,8 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService) {
         // Harmony Hub somehow keeps emitting its own custom property despite us never subscribing for it, so filter for power state characteristic only
         if characteristic.characteristicType == HMCharacteristicTypePowerState {
-            // publish string in format "device_id,room_id,type,source,value,timestamp"
-            mqtt.publish("smarter/homekit/data/\(clientID)", withString: "\(characteristic.uniqueIdentifier.uuidString),\(accessory.room?.uniqueIdentifier.uuidString ?? "unknown"),\(inferEventType(service)),homekit,\(characteristic.value ?? "unknown"),\(NSDate().timeIntervalSince1970),\(service.name)")
+            // publish string in format "device_id,room_id,type,source,value,timestamp,characteristic_id"
+            mqtt.publish("smarter/homekit/data/\(clientID)", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),homekit,\(characteristic.value ?? "unknown"),\(NSDate().timeIntervalSince1970),\(characteristic.uniqueIdentifier.uuidString)")
         }
     }
 }
