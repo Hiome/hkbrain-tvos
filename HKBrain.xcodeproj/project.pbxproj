@@ -11,15 +11,22 @@
 		2B02B9B420425EB200FDC713 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B02B9B320425EB200FDC713 /* ViewController.swift */; };
 		2B02B9B720425EB200FDC713 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2B02B9B520425EB200FDC713 /* Main.storyboard */; };
 		2B02B9B920425EB200FDC713 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2B02B9B820425EB200FDC713 /* Assets.xcassets */; };
+		2B42BC39204260AA006E8E0F /* HomeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B42BC38204260AA006E8E0F /* HomeKit.framework */; };
+		CDC2E628214791C1B6652F25 /* Pods_HKBrain.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A62FF88123F55B9788295C5D /* Pods_HKBrain.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0C93B81B246A581FA0D10D88 /* Pods-HKBrain.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HKBrain.release.xcconfig"; path = "Pods/Target Support Files/Pods-HKBrain/Pods-HKBrain.release.xcconfig"; sourceTree = "<group>"; };
 		2B02B9AE20425EB200FDC713 /* HKBrain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HKBrain.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B02B9B120425EB200FDC713 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		2B02B9B320425EB200FDC713 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		2B02B9B620425EB200FDC713 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		2B02B9B820425EB200FDC713 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2B02B9BA20425EB200FDC713 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2B42BC3420426087006E8E0F /* HKBrain.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HKBrain.entitlements; sourceTree = "<group>"; };
+		2B42BC38204260AA006E8E0F /* HomeKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HomeKit.framework; path = System/Library/Frameworks/HomeKit.framework; sourceTree = SDKROOT; };
+		5FE35C8C5FAA844DC758FA0F /* Pods-HKBrain.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HKBrain.debug.xcconfig"; path = "Pods/Target Support Files/Pods-HKBrain/Pods-HKBrain.debug.xcconfig"; sourceTree = "<group>"; };
+		A62FF88123F55B9788295C5D /* Pods_HKBrain.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HKBrain.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -27,6 +34,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B42BC39204260AA006E8E0F /* HomeKit.framework in Frameworks */,
+				CDC2E628214791C1B6652F25 /* Pods_HKBrain.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -38,6 +47,8 @@
 			children = (
 				2B02B9B020425EB200FDC713 /* HKBrain */,
 				2B02B9AF20425EB200FDC713 /* Products */,
+				2B42BC3520426087006E8E0F /* Frameworks */,
+				F1D78886352EA901BA2052A9 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -52,6 +63,7 @@
 		2B02B9B020425EB200FDC713 /* HKBrain */ = {
 			isa = PBXGroup;
 			children = (
+				2B42BC3420426087006E8E0F /* HKBrain.entitlements */,
 				2B02B9B120425EB200FDC713 /* AppDelegate.swift */,
 				2B02B9B320425EB200FDC713 /* ViewController.swift */,
 				2B02B9B520425EB200FDC713 /* Main.storyboard */,
@@ -61,6 +73,24 @@
 			path = HKBrain;
 			sourceTree = "<group>";
 		};
+		2B42BC3520426087006E8E0F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2B42BC38204260AA006E8E0F /* HomeKit.framework */,
+				A62FF88123F55B9788295C5D /* Pods_HKBrain.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F1D78886352EA901BA2052A9 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				5FE35C8C5FAA844DC758FA0F /* Pods-HKBrain.debug.xcconfig */,
+				0C93B81B246A581FA0D10D88 /* Pods-HKBrain.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -68,9 +98,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2B02B9BD20425EB200FDC713 /* Build configuration list for PBXNativeTarget "HKBrain" */;
 			buildPhases = (
+				9762727D137DA56148C5F23C /* [CP] Check Pods Manifest.lock */,
 				2B02B9AA20425EB200FDC713 /* Sources */,
 				2B02B9AB20425EB200FDC713 /* Frameworks */,
 				2B02B9AC20425EB200FDC713 /* Resources */,
+				A84BE8A2157F357043E8A621 /* [CP] Embed Pods Frameworks */,
+				2A2A50A786F57B4EE66452B0 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -94,6 +127,11 @@
 					2B02B9AD20425EB200FDC713 = {
 						CreatedOnToolsVersion = 9.2;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.HomeKit = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -126,6 +164,64 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2A2A50A786F57B4EE66452B0 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-HKBrain/Pods-HKBrain-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		9762727D137DA56148C5F23C /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-HKBrain-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A84BE8A2157F357043E8A621 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Pods/Target Support Files/Pods-HKBrain/Pods-HKBrain-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/CocoaAsyncSocket/CocoaAsyncSocket.framework",
+				"${BUILT_PRODUCTS_DIR}/CocoaMQTT/CocoaMQTT.framework",
+				"${BUILT_PRODUCTS_DIR}/SwiftyTimer/SwiftyTimer.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/CocoaAsyncSocket.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/CocoaMQTT.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SwiftyTimer.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-HKBrain/Pods-HKBrain-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2B02B9AA20425EB200FDC713 /* Sources */ = {
@@ -258,10 +354,13 @@
 		};
 		2B02B9BE20425EB200FDC713 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5FE35C8C5FAA844DC758FA0F /* Pods-HKBrain.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = HKBrain/HKBrain.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = RTKTPQSZLM;
 				INFOPLIST_FILE = HKBrain/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.hiome.HKBrain;
@@ -273,10 +372,13 @@
 		};
 		2B02B9BF20425EB200FDC713 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C93B81B246A581FA0D10D88 /* Pods-HKBrain.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = HKBrain/HKBrain.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = RTKTPQSZLM;
 				INFOPLIST_FILE = HKBrain/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.hiome.HKBrain;
