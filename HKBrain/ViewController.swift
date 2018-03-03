@@ -12,14 +12,17 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     var home: HMHome!
     var knownCharacteristics = [String: HMCharacteristic]()
     
-    let clientID = UIDevice.current.identifierForVendor!.uuidString
+    let clientID = "homekit-\(UIDevice.current.identifierForVendor!.uuidString)"
     var mqtt: CocoaMQTT!
     
     override func viewDidLoad() {
         UIApplication.shared.isIdleTimerDisabled = true
         
         mqtt = CocoaMQTT(clientID: clientID, host: "raspberrypi.local", port: 1883)
-        mqtt.willMessage = CocoaMQTTWill(topic: "smarter/homekit/lifecycle/" + clientID, message: "disconnected")
+        let will = CocoaMQTTWill(topic: "hiome/lifecycle/homekit/\(clientID)", message: "disconnected")
+        will.retained = true
+        mqtt.willMessage = will
+        mqtt.cleanSession = false
         mqtt.keepAlive = 60
         mqtt.delegate = self
         mqtt.connect()
@@ -28,24 +31,26 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         super.viewDidLoad()
     }
     
+    /** MQTT Delegate **/
+
     func mqtt(_ mqtt: CocoaMQTT, didConnectAck ack: CocoaMQTTConnAck) {
-        mqtt.publish("smarter/homekit/lifecycle/" + clientID, withString: "connected")
-        mqtt.subscribe("smarter/homekit/instructions/#")
+        mqtt.publish("hiome/lifecycle/homekit/\(clientID)", withString: "connected", retained: true)
+        mqtt.subscribe("hiome/command/#")
+        mqtt.subscribe("hiome/announce/#")
     }
     func mqtt(_ mqtt: CocoaMQTT, didReceiveMessage message: CocoaMQTTMessage, id: UInt16 ) {
         if message.string == "refresh" {
-            for a in home.accessories {
-                refreshAccessory(a)
-            }
+            refreshHome(home)
             return
         }
         
         let parts = message.string!.components(separatedBy: ",")
         let characteristic_id = parts[0]
-        let characteristic_value = parts[4]
+        let characteristic_value = parts[3]
         let charactertistic = knownCharacteristics[characteristic_id]
         if charactertistic == nil {
             print("could not find device \(characteristic_id)")
+            alert(characteristic_id, withError: "device not found", atLevel: "warning")
             return
         }
         
@@ -54,36 +59,25 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         knownCharacteristics[characteristic_id]?.writeValue(value, completionHandler: { (err) in
             if err == nil {
                 print("success!")
-                mqtt.publish("smarter/homekit/success/\(self.clientID)", withString: "\(characteristic_id),\(value),success,\(NSDate().timeIntervalSince1970)")
             } else {
                 print("FAILED ##############")
                 print(err?.localizedDescription ?? "unknown")
-                mqtt.publish("smarter/homekit/errors/\(self.clientID)", withString: "\(characteristic_id),\(value),\(err?.localizedDescription ?? "unknown"),\(NSDate().timeIntervalSince1970)")
+                self.alert(characteristic_id, withError: "failed to set to \(value): \(err?.localizedDescription ?? "unknown")", atLevel: "error")
             }
         })
     }
-    func mqtt(_ mqtt: CocoaMQTT, didPublishMessage message: CocoaMQTTMessage, id: UInt16) {
-        
-    }
-    func mqtt(_ mqtt: CocoaMQTT, didPublishAck id: UInt16) {
-        
-    }
-    func mqtt(_ mqtt: CocoaMQTT, didSubscribeTopic topic: String) {
-        
-    }
-    func mqtt(_ mqtt: CocoaMQTT, didUnsubscribeTopic topic: String) {
-        
-    }
-    func mqttDidPing(_ mqtt: CocoaMQTT) {
-        
-    }
-    func mqttDidReceivePong(_ mqtt: CocoaMQTT) {
-        
-    }
+    func mqtt(_ mqtt: CocoaMQTT, didPublishMessage message: CocoaMQTTMessage, id: UInt16) {}
+    func mqtt(_ mqtt: CocoaMQTT, didPublishAck id: UInt16) {}
+    func mqtt(_ mqtt: CocoaMQTT, didSubscribeTopic topic: String) {}
+    func mqtt(_ mqtt: CocoaMQTT, didUnsubscribeTopic topic: String) {}
+    func mqttDidPing(_ mqtt: CocoaMQTT) {}
+    func mqttDidReceivePong(_ mqtt: CocoaMQTT) {}
     func mqttDidDisconnect(_ mqtt: CocoaMQTT, withError err: Error?) {
         // try to reconnect
         mqtt.connect()
     }
+    
+    /** HMHomeManager Delegate **/
     
     func homeManagerDidUpdateHomes(_ manager: HMHomeManager) {
         // TODO: need some way of linking this device to a specific home location
@@ -95,53 +89,72 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     func homeManagerDidUpdatePrimaryHome(_ manager: HMHomeManager) {
         refreshHome(manager.primaryHome!)
     }
+    
+    /** HMHome Delegate **/
+    
+    func home(_ home: HMHome, didAdd: HMAccessory) {
+        refreshAccessory(didAdd)
+    }
+    func home(_ home: HMHome, didRemove: HMAccessory) {
+        deleteAccessory(didRemove)
+    }
+    func home(_ home: HMHome, didUpdate room: HMRoom, for accessory: HMAccessory) {
+        deleteAccessory(accessory)
+        refreshAccessory(accessory)
+    }
+    func home(_ home: HMHome, didAdd: HMRoom) {
+        publishRoom(didAdd)
+    }
+    func home(_ home: HMHome, didRemove: HMRoom) {
+        dataSync("deleted", forObject: didRemove)
+    }
+    func home(_ home: HMHome, didUpdateNameFor: HMRoom) {
+        dataSync("name-changed", forObject: didUpdateNameFor)
+    }
+    
+    /** HMAccessory Delegate **/
+    
+    func accessoryDidUpdateServices(_ accessory: HMAccessory) {
+        refreshAccessory(accessory)
+    }
+    func accessory(_ accessory: HMAccessory, didUpdateAssociatedServiceTypeFor: HMService) {
+        refreshAccessory(accessory)
+    }
+    func accessoryDidUpdateReachability(_ accessory: HMAccessory) {
+        refreshAccessory(accessory)
+    }
+    func accessory(_ accessory: HMAccessory, service: HMService, didUpdateValueFor characteristic: HMCharacteristic) {
+        // Harmony Hub somehow keeps emitting its own custom property despite us never subscribing for it, so filter for power state characteristic only
+        if characteristic.characteristicType == HMCharacteristicTypePowerState {
+            publish(characteristic, accessory: accessory, service: service)
+        }
+    }
+    
+    /** Helpers **/
+    
     func refreshHome(_ primaryHome: HMHome) {
         home = primaryHome
         home.delegate = self
         for a in home.accessories {
             refreshAccessory(a)
         }
-    }
-    
-    func home(_ home: HMHome, didAdd: HMAccessory) {
-        refreshAccessory(didAdd)
-    }
-    
-    func home(_ home: HMHome, didRemove: HMAccessory) {
-        deleteAccessory(didRemove)
-    }
-    func home(_ home: HMHome, didUpdate room: HMRoom, for accessory: HMAccessory) {
-        deleteAccessory(accessory)
-    }
-    func deleteAccessory(_ accessory: HMAccessory) {
-        mqtt.publish("smarter/homekit/data/\(clientID)", withString: "\(accessory.uniqueIdentifier.uuidString),deleted")
-    }
-    
-    func accessoryDidUpdateServices(_ accessory: HMAccessory) {
-        refreshAccessory(accessory)
-    }
-    
-    func accessory(_ accessory: HMAccessory, didUpdateAssociatedServiceTypeFor: HMService) {
-        refreshAccessory(accessory)
-    }
-    
-    func accessoryDidUpdateReachability(_ accessory: HMAccessory) {
-        refreshAccessory(accessory)
+        for r in home.rooms {
+            publishRoom(r)
+        }
     }
     
     func refreshAccessory(_ accessory: HMAccessory) {
         for service in accessory.services {
-            // only subscribe to lights and TV power state
-            if service.serviceType == HMServiceTypeLightbulb || service.associatedServiceType == HMServiceTypeLightbulb {
+            if inferEventCategory(service) == "effector" {
                 for c in service.characteristics {
                     if c.characteristicType == HMCharacteristicTypePowerState {
                         c.enableNotification(true, completionHandler: { (error) in
                             if error != nil {
                                 print("ENABLING NOTIFICATION FOR \(service.name) FAILED ##############")
                                 print(error?.localizedDescription ?? "unknown")
-                                self.mqtt.publish("smarter/homekit/errors/\(self.clientID)", withString: "\(self.sanitizeName(service.name)),\(error?.localizedDescription ?? "unknown"),\(NSDate().timeIntervalSince1970)")
+                                self.alert(service.name, withError: "failed to enable notifications because: \(error?.localizedDescription ?? "unknown")", atLevel: "error")
                             } else {
-                                print("enabled notifications for \(self.sanitizeName(service.name)) of type \(c.localizedDescription)")
+                                print("enabled notifications for \(service.name) of type \(c.localizedDescription)")
                             }
                         })
                         knownCharacteristics[sanitizeName(service.name)] = c
@@ -152,12 +165,32 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         }
         accessory.delegate = self
     }
+    func deleteAccessory(_ accessory: HMAccessory) {
+        for service in accessory.services {
+            if inferEventType(service) != "unknown" {
+                dataSync("deleted", forObject: service)
+            }
+        }
+    }
     
     func inferEventType(_ service: HMService) -> String {
-        if service.serviceType == HMServiceTypeLightbulb || service.associatedServiceType == HMServiceTypeLightbulb {
+        switch service.associatedServiceType ?? service.serviceType {
+        case HMServiceTypeLightbulb:
             return "light"
+        case HMServiceTypeMotionSensor:
+            return "motion"
+        case HMServiceTypeOccupancySensor:
+            return "occupancy"
+        default:
+            return "unknown"
         }
-        
+    }
+    
+    func inferEventCategory(_ service: HMService) -> String {
+        if service.serviceType == HMServiceTypeLightbulb || service.associatedServiceType == HMServiceTypeLightbulb {
+            return "effector"
+        }
+
         return "sensor"
     }
     
@@ -165,16 +198,21 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         return name.replacingOccurrences(of: ",", with: "")
     }
     
-    func accessory(_ accessory: HMAccessory, service: HMService, didUpdateValueFor characteristic: HMCharacteristic) {
-        publish(characteristic, accessory: accessory, service: service)
+    /** Publishing **/
+    
+    func alert(_ device: String, withError: String, atLevel: String) {
+        mqtt.publish("hiome/alert/homekit", withString: "\(sanitizeName(device)),\(sanitizeName(withError)),\(atLevel),\(NSDate().timeIntervalSince1970)")
+    }
+    func publishRoom(_ room: HMRoom) {
+        mqtt.publish("hiome/room/homekit", withString: "\(sanitizeName(room.name)),null,room,null,\(NSDate().timeIntervalSince1970),\(room.uniqueIdentifier.uuidString)")
+    }
+    func dataSync(_ action: String, forObject: AnyObject) {
+        let ofType = forObject is HMRoom ? "room" : inferEventCategory(forObject as! HMService)
+        mqtt.publish("hiome/data-sync/homekit", withString: "\(action),\(ofType),\(sanitizeName(forObject.name)),\(forObject.uniqueIdentifier.uuidString)")
     }
     
     func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService) {
-        // Harmony Hub somehow keeps emitting its own custom property despite us never subscribing for it, so filter for power state characteristic only
-        if characteristic.characteristicType == HMCharacteristicTypePowerState {
-            // publish string in format "device_id,room_id,type,source,value,timestamp,characteristic_id"
-            mqtt.publish("smarter/homekit/data/\(clientID)", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),homekit,\(characteristic.value ?? "unknown"),\(NSDate().timeIntervalSince1970),\(characteristic.uniqueIdentifier.uuidString)")
-        }
+        // publish string in format "device_id,room_id,type,value,timestamp,characteristic_id"
+        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),\(characteristic.value ?? "unknown"),\(NSDate().timeIntervalSince1970),\(characteristic.uniqueIdentifier.uuidString),\(accessory.name)")
     }
 }
-
