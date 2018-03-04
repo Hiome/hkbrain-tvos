@@ -39,8 +39,10 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         mqtt.subscribe("hiome/announce/#")
     }
     func mqtt(_ mqtt: CocoaMQTT, didReceiveMessage message: CocoaMQTTMessage, id: UInt16 ) {
-        if message.string == "refresh" {
-            refreshHome(home)
+        if message.topic.starts(with: "hiome/announce") {
+            if message.string == "refresh" {
+                refreshHome(home)
+            }
             return
         }
         
@@ -213,6 +215,6 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     
     func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService) {
         // publish string in format "device_id,room_id,type,value,timestamp,characteristic_id"
-        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),\(characteristic.value ?? "unknown"),\(NSDate().timeIntervalSince1970),\(characteristic.uniqueIdentifier.uuidString),\(accessory.name)")
+        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),\(characteristic.value ?? "unknown"),\(NSDate().timeIntervalSince1970),\(characteristic.uniqueIdentifier.uuidString)")
     }
 }
