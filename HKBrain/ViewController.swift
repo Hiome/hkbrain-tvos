@@ -64,7 +64,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
             } else {
                 print("FAILED ##############")
                 print(err?.localizedDescription ?? "unknown")
-                self.alert(characteristic_id, withError: "failed to set to \(value): \(err?.localizedDescription ?? "unknown")", atLevel: "error")
+                self.alert(characteristic_id, withError: "failed to set to \(value): \(err?.localizedDescription ?? "unknown")", atLevel: "warning")
             }
         })
     }
@@ -154,7 +154,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
                             if error != nil {
                                 print("ENABLING NOTIFICATION FOR \(service.name) FAILED ##############")
                                 print(error?.localizedDescription ?? "unknown")
-                                self.alert(service.name, withError: "failed to enable notifications because: \(error?.localizedDescription ?? "unknown")", atLevel: "error")
+                                self.alert(service.name, withError: "failed to enable notifications because: \(error?.localizedDescription ?? "unknown")", atLevel: "warning")
                             } else {
                                 print("enabled notifications for \(service.name) of type \(c.localizedDescription)")
                             }
