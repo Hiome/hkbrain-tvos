@@ -8,10 +8,8 @@ import HomeKit
 import CocoaMQTT
 
 class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelegate, HMHomeDelegate, CocoaMQTTDelegate {
-    let homeManager = HMHomeManager()
-    var home: HMHome!
+    var homeManager: HMHomeManager!
     var knownCharacteristics = [String: HMCharacteristic]()
-    
     let clientID = "homekit-\(UIDevice.current.identifierForVendor!.uuidString)"
     var mqtt: CocoaMQTT!
     
@@ -27,6 +25,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         mqtt.delegate = self
         mqtt.connect()
         
+        homeManager = HMHomeManager()
         homeManager.delegate = self
         super.viewDidLoad()
     }
@@ -41,7 +40,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     func mqtt(_ mqtt: CocoaMQTT, didReceiveMessage message: CocoaMQTTMessage, id: UInt16 ) {
         if message.topic.starts(with: "hiome/announce") {
             if message.string == "refresh" {
-                refreshHome(home)
+                refreshHome(homeManager.primaryHome!)
             }
             return
         }
@@ -52,7 +51,6 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         let charactertistic = knownCharacteristics[characteristic_id]
         if charactertistic == nil {
             print("could not find device \(characteristic_id)")
-            alert(characteristic_id, withError: "device not found", atLevel: "warning")
             return
         }
         
@@ -126,21 +124,17 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         refreshAccessory(accessory)
     }
     func accessory(_ accessory: HMAccessory, service: HMService, didUpdateValueFor characteristic: HMCharacteristic) {
-        // Harmony Hub somehow keeps emitting its own custom property despite us never subscribing for it, so filter for power state characteristic only
-        if characteristic.characteristicType == HMCharacteristicTypePowerState {
-            publish(characteristic, accessory: accessory, service: service)
-        }
+        publish(characteristic, accessory: accessory, service: service)
     }
     
     /** Helpers **/
     
     func refreshHome(_ primaryHome: HMHome) {
-        home = primaryHome
-        home.delegate = self
-        for a in home.accessories {
+        primaryHome.delegate = self
+        for a in primaryHome.accessories {
             refreshAccessory(a)
         }
-        for r in home.rooms {
+        for r in primaryHome.rooms {
             publishRoom(r)
         }
     }
@@ -150,27 +144,22 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
             if inferEventCategory(service) == "effector" {
                 for c in service.characteristics {
                     if c.characteristicType == HMCharacteristicTypePowerState {
-                        c.enableNotification(true, completionHandler: { (error) in
-                            if error != nil {
-                                print("ENABLING NOTIFICATION FOR \(service.name) FAILED ##############")
-                                print(error?.localizedDescription ?? "unknown")
-                                self.alert(service.name, withError: "failed to enable notifications because: \(error?.localizedDescription ?? "unknown")", atLevel: "warning")
-                            } else {
-                                print("enabled notifications for \(service.name) of type \(c.localizedDescription)")
-                            }
-                        })
+                        accessory.delegate = self
                         knownCharacteristics[sanitizeName(service.name)] = c
-                        publish(c, accessory: accessory, service: service)
+                        c.readValue { (e) in
+                            self.publish(c, accessory: accessory, service: service)
+                        }
+                        return
                     }
                 }
             }
         }
-        accessory.delegate = self
     }
     func deleteAccessory(_ accessory: HMAccessory) {
         for service in accessory.services {
             if inferEventType(service) != "unknown" {
                 dataSync("deleted", forObject: service)
+                return
             }
         }
     }
@@ -214,7 +203,21 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     }
     
     func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService) {
+        if characteristic.value == nil {
+            return
+        }
+        
+        var val:Int = -1
+        switch characteristic.characteristicType {
+        case HMCharacteristicTypeBrightness:
+            val = (characteristic.value as! Int) > 0 ? 1 : 0
+        case HMCharacteristicTypePowerState:
+            val = (characteristic.value as! Bool) ? 1 : 0
+        default:
+            return
+        }
+        
         // publish string in format "device_id,room_id,type,value,timestamp,characteristic_id"
-        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),\(characteristic.value ?? "unknown"),\(NSDate().timeIntervalSince1970),\(characteristic.uniqueIdentifier.uuidString)")
+        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),\(val),\(NSDate().timeIntervalSince1970),\(characteristic.uniqueIdentifier.uuidString)")
     }
 }
