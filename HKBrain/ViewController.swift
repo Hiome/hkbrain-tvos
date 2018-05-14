@@ -147,7 +147,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
                         accessory.delegate = self
                         knownCharacteristics[sanitizeName(service.name)] = c
                         c.readValue { (e) in
-                            self.publish(c, accessory: accessory, service: service)
+                            self.publish(c, accessory: accessory, service: service, refresh: true)
                         }
                         return
                     }
@@ -202,7 +202,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         mqtt.publish("hiome/data-sync/homekit", withString: "\(action),\(ofType),\(sanitizeName(forObject.name)),\(forObject.uniqueIdentifier.uuidString)")
     }
     
-    func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService) {
+    func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService, refresh: Bool = false) {
         if characteristic.value == nil {
             return
         }
@@ -217,7 +217,8 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
             return
         }
         
+        let ts = refresh ? 0 : NSDate().timeIntervalSince1970
         // publish string in format "device_id,room_id,type,value,timestamp,characteristic_id"
-        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),\(val),\(NSDate().timeIntervalSince1970),\(characteristic.uniqueIdentifier.uuidString)")
+        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),\(val),\(ts),\(characteristic.uniqueIdentifier.uuidString)")
     }
 }
