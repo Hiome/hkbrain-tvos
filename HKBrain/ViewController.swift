@@ -36,6 +36,9 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         mqtt.publish("hiome/lifecycle/homekit/\(clientID)", withString: "connected", retained: true)
         mqtt.subscribe("hiome/command/#")
         mqtt.subscribe("hiome/announce/#")
+        if homeManager.primaryHome != nil {
+            refreshHome(homeManager.primaryHome!)
+        }
     }
     func mqtt(_ mqtt: CocoaMQTT, didReceiveMessage message: CocoaMQTTMessage, id: UInt16 ) {
         if message.topic.starts(with: "hiome/announce") {
