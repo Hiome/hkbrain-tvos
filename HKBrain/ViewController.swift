@@ -16,7 +16,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     override func viewDidLoad() {
         UIApplication.shared.isIdleTimerDisabled = true
         
-        mqtt = CocoaMQTT(clientID: clientID, host: "raspberrypi.local", port: 1883)
+        mqtt = CocoaMQTT(clientID: clientID, host: "hiomehub.local", port: 1883)
         let will = CocoaMQTTWill(topic: "hiome/lifecycle/homekit/\(clientID)", message: "disconnected")
         will.retained = true
         mqtt.willMessage = will
@@ -47,7 +47,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         
         let parts = message.string!.components(separatedBy: ",")
         let characteristic_id = parts[0]
-        let characteristic_value = parts[3]
+        let characteristic_value = parts[2]
         let charactertistic = knownCharacteristics[characteristic_id]
         if charactertistic == nil {
             print("could not find device \(characteristic_id)")
@@ -80,10 +80,6 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     /** HMHomeManager Delegate **/
     
     func homeManagerDidUpdateHomes(_ manager: HMHomeManager) {
-        // TODO: need some way of linking this device to a specific home location
-        // so that it only listens to events for the correct home. Currently,
-        // this will only listen to events from the primary home.
-        // It will also crash if no primary home is setup.
         refreshHome(manager.primaryHome!)
     }
     func homeManagerDidUpdatePrimaryHome(_ manager: HMHomeManager) {
@@ -106,10 +102,10 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         publishRoom(didAdd)
     }
     func home(_ home: HMHome, didRemove: HMRoom) {
-        dataSync("deleted", forObject: didRemove)
+        deleteRoom(didRemove)
     }
     func home(_ home: HMHome, didUpdateNameFor: HMRoom) {
-        dataSync("name-changed", forObject: didUpdateNameFor)
+        publishRoom(didUpdateNameFor)
     }
     
     /** HMAccessory Delegate **/
@@ -145,7 +141,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
                 for c in service.characteristics {
                     if c.characteristicType == HMCharacteristicTypePowerState {
                         accessory.delegate = self
-                        knownCharacteristics[sanitizeName(service.name)] = c
+                        knownCharacteristics[service.uniqueIdentifier.uuidString] = c
                         c.readValue { (e) in
                             self.publish(c, accessory: accessory, service: service, refresh: true)
                         }
@@ -157,8 +153,8 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     }
     func deleteAccessory(_ accessory: HMAccessory) {
         for service in accessory.services {
-            if inferEventType(service) != "unknown" {
-                dataSync("deleted", forObject: service)
+            if inferEventType(service) != "" {
+                deleteService(service)
                 return
             }
         }
@@ -173,7 +169,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         case HMServiceTypeOccupancySensor:
             return "occupancy"
         default:
-            return "unknown"
+            return ""
         }
     }
     
@@ -185,23 +181,24 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         return "sensor"
     }
     
-    func sanitizeName(_ name: String) -> String {
+    func safeStr(_ name: String) -> String {
         return name.replacingOccurrences(of: ",", with: "")
     }
     
     /** Publishing **/
     
     func alert(_ device: String, withError: String, atLevel: String) {
-        mqtt.publish("hiome/alert/homekit", withString: "\(sanitizeName(device)),\(sanitizeName(withError)),\(atLevel),\(NSDate().timeIntervalSince1970)")
+        mqtt.publish("hiome/alert/homekit", withString: "\(device),\(safeStr(withError)),\(atLevel)")
     }
     func publishRoom(_ room: HMRoom) {
-        mqtt.publish("hiome/room/homekit", withString: "\(sanitizeName(room.name)),null,room,null,\(NSDate().timeIntervalSince1970),\(room.uniqueIdentifier.uuidString)")
+        mqtt.publish("hiome/room/homekit", withString: "\(room.uniqueIdentifier.uuidString),\(safeStr(room.name))")
     }
-    func dataSync(_ action: String, forObject: AnyObject) {
-        let ofType = forObject is HMRoom ? "room" : inferEventCategory(forObject as! HMService)
-        mqtt.publish("hiome/data-sync/homekit", withString: "\(action),\(ofType),\(sanitizeName(forObject.name)),\(forObject.uniqueIdentifier.uuidString)")
+    func deleteRoom(_ room: HMRoom) {
+        mqtt.publish("hiome/room/homekit", withString: "\(room.uniqueIdentifier.uuidString),#DELETED#")
     }
-    
+    func deleteService(_ service: HMService) {
+        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(service.uniqueIdentifier.uuidString),#DELETED#")
+    }
     func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService, refresh: Bool = false) {
         if characteristic.value == nil {
             return
@@ -217,8 +214,8 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
             return
         }
         
-        let ts = refresh ? 0 : NSDate().timeIntervalSince1970
-        // publish string in format "device_id,room_id,type,value,timestamp,characteristic_id"
-        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(sanitizeName(service.name)),\(sanitizeName(accessory.room?.name ?? "unknown")),\(inferEventType(service)),\(val),\(ts),\(characteristic.uniqueIdentifier.uuidString)")
+        let ts = refresh ? ",refresh" : ""
+        // publish string in format "device_id,room_id,value,name,type,refresh"
+        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(service.uniqueIdentifier.uuidString),\(accessory.room?.uniqueIdentifier.uuidString ?? ""),\(val),\(safeStr(service.name)),\(inferEventType(service))\(ts)")
     }
 }
