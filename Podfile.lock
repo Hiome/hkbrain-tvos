@@ -3,16 +3,45 @@ PODS:
   - CocoaMQTT (1.1.2):
     - CocoaAsyncSocket (~> 7.6.1)
     - SwiftyTimer (~> 2.0.0)
+  - KSCrash/Core (1.15.18):
+    - KSCrash/Reporting/Filters/Basic
+  - KSCrash/Recording (1.15.18):
+    - KSCrash/Recording/Tools (= 1.15.18)
+  - KSCrash/Recording/Tools (1.15.18)
+  - KSCrash/Reporting/Filters/Base (1.15.18):
+    - KSCrash/Recording
+  - KSCrash/Reporting/Filters/Basic (1.15.18):
+    - KSCrash/Recording
+    - KSCrash/Reporting/Filters/Base
+  - Sentry (3.12.4):
+    - Sentry/Core (= 3.12.4)
+    - Sentry/KSCrash (= 3.12.4)
+  - Sentry/Core (3.12.4)
+  - Sentry/KSCrash (3.12.4):
+    - KSCrash/Core (~> 1.15.12)
   - SwiftyTimer (2.0.0)
 
 DEPENDENCIES:
   - CocoaMQTT
+  - Sentry (from `https://github.com/getsentry/sentry-cocoa.git`, tag `3.12.4`)
+
+EXTERNAL SOURCES:
+  Sentry:
+    :git: https://github.com/getsentry/sentry-cocoa.git
+    :tag: 3.12.4
+
+CHECKOUT OPTIONS:
+  Sentry:
+    :git: https://github.com/getsentry/sentry-cocoa.git
+    :tag: 3.12.4
 
 SPEC CHECKSUMS:
   CocoaAsyncSocket: eafaa68a7e0ec99ead0a7b35015e0bf25d2c8987
   CocoaMQTT: d33ab3cd4e329f9f1cfbb62e25306a318a606616
+  KSCrash: 5394936f41e5c1ef7b79cf79b30d53299b0c160e
+  Sentry: 7d3ea7176e5184e9c35c12a5825905345807e8c1
   SwiftyTimer: 2efd74b060d69ad4f1496baf5bbedbe132125fcf
 
-PODFILE CHECKSUM: 44653987489bb629df6028c756872ffd03651955
+PODFILE CHECKSUM: 4c0370774f6747c23441957a655bd4f837835548
 
 COCOAPODS: 1.4.0

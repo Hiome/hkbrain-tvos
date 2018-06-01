@@ -6,6 +6,7 @@
 import UIKit
 import HomeKit
 import CocoaMQTT
+import Sentry
 
 class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelegate, HMHomeDelegate, CocoaMQTTDelegate {
     var homeManager: HMHomeManager!
@@ -65,7 +66,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
             } else {
                 print("FAILED ##############")
                 print(err?.localizedDescription ?? "unknown")
-                self.alert(characteristic_id, withError: "failed to set to \(value): \(err?.localizedDescription ?? "unknown")", atLevel: "warning")
+                self.alert(characteristic_id, withError: "failed to set to \(value): \(err?.localizedDescription ?? "unknown")", atLevel: "error")
             }
         })
     }
@@ -146,6 +147,9 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
                         accessory.delegate = self
                         knownCharacteristics[service.uniqueIdentifier.uuidString] = c
                         c.readValue { (e) in
+                            if e != nil {
+                                self.alert(c.uniqueIdentifier.uuidString, withError: "failed to read \(service.name): \(e!.localizedDescription)", atLevel: "error")
+                            }
                             self.publish(c, accessory: accessory, service: service, refresh: true)
                         }
                         return
@@ -154,6 +158,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
             }
         }
     }
+    
     func deleteAccessory(_ accessory: HMAccessory) {
         for service in accessory.services {
             if inferEventType(service) != "" {
@@ -192,6 +197,16 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     
     func alert(_ device: String, withError: String, atLevel: String) {
         mqtt.publish("hiome/alert/homekit", withString: "\(device),\(safeStr(withError)),\(atLevel)")
+        if atLevel == "error" {
+            let event = Event(level: .error)
+            event.message = withError
+            event.extra = ["device": device]
+            Client.shared?.send(event: event) { (error) in
+                if error != nil {
+                    self.mqtt.publish("hiome/alert/homekit", withString: "sentry,\(self.safeStr(error!.localizedDescription)),error")
+                }
+            }
+        }
     }
     func publishRoom(_ room: HMRoom) {
         mqtt.publish("hiome/room/homekit", withString: "\(room.uniqueIdentifier.uuidString),\(safeStr(room.name))")
