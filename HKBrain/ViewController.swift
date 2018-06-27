@@ -152,7 +152,11 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
                             }
                             self.publish(c, accessory: accessory, service: service, refresh: true)
                         }
-                        return
+                        c.enableNotification(true) { (e) in
+                            if e != nil {
+                                self.alert(c.uniqueIdentifier.uuidString, withError: "failed to enable notifications for \(service.name): \(e!.localizedDescription)", atLevel: "error")
+                            }
+                        }
                     }
                 }
             }
