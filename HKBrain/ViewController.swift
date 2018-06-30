@@ -35,7 +35,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
 
     func mqtt(_ mqtt: CocoaMQTT, didConnectAck ack: CocoaMQTTConnAck) {
         mqtt.publish("hiome/lifecycle/homekit/\(clientID)", withString: "connected", retained: true)
-        mqtt.subscribe("hiome/command/#")
+        mqtt.subscribe("hiome/command/#", qos: CocoaMQTTQOS.qos1)
         mqtt.subscribe("hiome/announce/#")
         if homeManager.primaryHome != nil {
             refreshHome(homeManager.primaryHome!)
@@ -213,13 +213,13 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         }
     }
     func publishRoom(_ room: HMRoom) {
-        mqtt.publish("hiome/room/homekit", withString: "\(room.uniqueIdentifier.uuidString),\(safeStr(room.name))")
+        mqtt.publish("hiome/room/homekit", withString: "\(room.uniqueIdentifier.uuidString),\(safeStr(room.name))", qos: CocoaMQTTQOS.qos1)
     }
     func deleteRoom(_ room: HMRoom) {
-        mqtt.publish("hiome/room/homekit", withString: "\(room.uniqueIdentifier.uuidString),#DELETED#")
+        mqtt.publish("hiome/room/homekit", withString: "\(room.uniqueIdentifier.uuidString),#DELETED#", qos: CocoaMQTTQOS.qos1)
     }
     func deleteService(_ service: HMService) {
-        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(service.uniqueIdentifier.uuidString),#DELETED#")
+        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(service.uniqueIdentifier.uuidString),#DELETED#", qos: CocoaMQTTQOS.qos1)
     }
     func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService, refresh: Bool = false) {
         if characteristic.value == nil {
@@ -238,6 +238,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         
         let ts = refresh ? ",refresh" : ""
         // publish string in format "device_id,room_id,value,name,type,refresh"
-        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(service.uniqueIdentifier.uuidString),\(accessory.room?.uniqueIdentifier.uuidString ?? ""),\(val),\(safeStr(service.name)),\(inferEventType(service))\(ts)")
+        mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(service.uniqueIdentifier.uuidString),\(accessory.room?.uniqueIdentifier.uuidString ?? ""),\(val),\(safeStr(service.name)),\(inferEventType(service))\(ts)",
+            qos: CocoaMQTTQOS.qos1)
     }
 }
