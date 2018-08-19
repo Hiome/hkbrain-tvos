@@ -141,9 +141,9 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     
     func refreshAccessory(_ accessory: HMAccessory) {
         for service in accessory.services {
-            if inferEventCategory(service) == "effector" {
+            if inferEventType(service) != "" {
                 for c in service.characteristics {
-                    if c.characteristicType == HMCharacteristicTypePowerState {
+                    if c.characteristicType == HMCharacteristicTypePowerState || c.characteristicType == HMCharacteristicTypeMotionDetected {
                         accessory.delegate = self
                         knownCharacteristics[service.uniqueIdentifier.uuidString] = c
                         c.readValue { (e) in
@@ -178,8 +178,6 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
             return "light"
         case HMServiceTypeMotionSensor:
             return "motion"
-        case HMServiceTypeOccupancySensor:
-            return "occupancy"
         default:
             return ""
         }
@@ -230,7 +228,7 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         switch characteristic.characteristicType {
         case HMCharacteristicTypeBrightness:
             val = (characteristic.value as! Int) > 0 ? 1 : 0
-        case HMCharacteristicTypePowerState:
+        case HMCharacteristicTypePowerState, HMCharacteristicTypeMotionDetected:
             val = (characteristic.value as! Bool) ? 1 : 0
         default:
             return
