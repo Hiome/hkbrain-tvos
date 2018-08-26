@@ -148,13 +148,13 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
                         knownCharacteristics[service.uniqueIdentifier.uuidString] = c
                         c.readValue { (e) in
                             if e != nil {
-                                self.alert(c.uniqueIdentifier.uuidString, withError: "failed to read \(service.name): \(e!.localizedDescription)", atLevel: "error")
+                                self.alert(service.uniqueIdentifier.uuidString, withError: "failed to read \(service.name): \(e!.localizedDescription)", atLevel: "error")
                             }
                             self.publish(c, accessory: accessory, service: service, refresh: true)
                         }
                         c.enableNotification(true) { (e) in
                             if e != nil {
-                                self.alert(c.uniqueIdentifier.uuidString, withError: "failed to enable notifications for \(service.name): \(e!.localizedDescription)", atLevel: "error")
+                                self.alert(service.uniqueIdentifier.uuidString, withError: "failed to enable notifications for \(service.name): \(e!.localizedDescription)", atLevel: "error")
                             }
                         }
                     }
