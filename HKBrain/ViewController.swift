@@ -141,9 +141,11 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     
     func refreshAccessory(_ accessory: HMAccessory) {
         for service in accessory.services {
-            if inferEventType(service) != "" {
+            let type = inferEventType(service)
+            if type != "" {
                 for c in service.characteristics {
-                    if c.characteristicType == HMCharacteristicTypePowerState || c.characteristicType == HMCharacteristicTypeMotionDetected {
+                    if (type == "light" && c.characteristicType == HMCharacteristicTypePowerState) ||
+                        (type == "motion" && c.characteristicType == HMCharacteristicTypeMotionDetected) {
                         accessory.delegate = self
                         knownCharacteristics[service.uniqueIdentifier.uuidString] = c
                         c.readValue { (e) in
@@ -219,6 +221,19 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
     func deleteService(_ service: HMService) {
         mqtt.publish("hiome/\(inferEventCategory(service))/homekit", withString: "\(service.uniqueIdentifier.uuidString),#DELETED#", qos: CocoaMQTTQOS.qos1)
     }
+    func publishBrightnessAsPowerState(accessory: HMAccessory, service: HMService, refresh: Bool = false) {
+        let c = knownCharacteristics[service.uniqueIdentifier.uuidString]
+        if c == nil {
+            print("could not find device \(service.uniqueIdentifier.uuidString)")
+            return
+        }
+        c!.readValue { (e) in
+            if e != nil {
+                self.alert(service.uniqueIdentifier.uuidString, withError: "failed to read \(service.name): \(e!.localizedDescription)", atLevel: "error")
+            }
+            self.publish(c!, accessory: accessory, service: service, refresh: refresh)
+        }
+    }
     func publish(_ characteristic: HMCharacteristic, accessory: HMAccessory, service: HMService, refresh: Bool = false) {
         if characteristic.value == nil {
             return
@@ -227,10 +242,11 @@ class ViewController: UIViewController, HMAccessoryDelegate, HMHomeManagerDelega
         var val:Int = -1
         switch characteristic.characteristicType {
         case HMCharacteristicTypeBrightness:
-            val = (characteristic.value as! Int) > 0 ? 1 : 0
+            return publishBrightnessAsPowerState(accessory: accessory, service: service, refresh: refresh)
         case HMCharacteristicTypePowerState, HMCharacteristicTypeMotionDetected:
             val = (characteristic.value as! Bool) ? 1 : 0
         default:
+            print("trying to publish unknown characteristic type for \(service.name)")
             return
         }
         
